@@ -19,7 +19,7 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import minmax_scale, maxabs_scale, normalize, robust_scale, scale
 
 
-def load_data_clusterft(adj_new, direction_path, dataset_name, load_saved=False,
+def load_data_clusterft(adj_new_list, direction_path, dataset_name, load_saved=False,
               k_nearest_neighobrs=50):
 
     # construct the target path and load the data
@@ -43,7 +43,7 @@ def load_data_clusterft(adj_new, direction_path, dataset_name, load_saved=False,
             print("Loading the data of the " + str(i) + "th view .......")
             fea, wave, hat, norm, weight = load_single_view_data(features[0][i].transpose(), dataset_name, i,
                                                                  load_saved, k_nearest_neighobrs, prunning_one,
-                                                                 prunning_two, common_neighbors,adj_new)
+                                                                 prunning_two, common_neighbors,adj_new_list[i])
             feature_list.append(fea)
             adj_wave_list.append(wave)
             adj_hat_list.append(hat)
@@ -87,7 +87,7 @@ def load_single_view_data(feature, dataset_name, view_no, load_saved, k_nearest_
     save_direction = './data/adj_matrix/' + dataset_name + '/'
     if not os.path.exists(save_direction):
         os.makedirs(save_direction)
-    if load_saved is not True:
+    if not load_saved:#load_saved is not True:
         # construct three kinds of adjacency matrix
         print("Constructing the adjacency matrix of " + dataset_name + " in the " + str(view_no) + "th view ......")
         adj, adj_wave, adj_hat = construct_adjacency_matrix(prunning_one, prunning_two, common_neighbors, adj_new)
@@ -129,16 +129,16 @@ def label_from_zero(labels):
 
 def construct_adjacency_matrix(prunning_one, prunning_two, common_neighbors, adj_new):
     start_time = time.time()
-
+    adj_new = adj_new.A if sp.issparse(adj_new) else adj_new # adj_new.A # Changing it here instead of inside the if-else, also since adj_new is not being a sparse matrix
     if prunning_one:
         # Pruning strategy 1
-        original_adj_wave = adj_new.A
+        original_adj_wave = adj_new
         judges_matrix = original_adj_wave == original_adj_wave.T
         np_adj_wave = original_adj_wave * judges_matrix
         adj_wave = sp.csc_matrix(np_adj_wave)
     else:
         # transform the matrix to be symmetric (Instead of Pruning strategy 1)
-        np_adj_wave = construct_symmetric_matrix(adj_new.A)
+        np_adj_wave = construct_symmetric_matrix(adj_new)
         adj_wave = sp.csc_matrix(np_adj_wave)
 
     # obtain the adjacency matrix without self-connection

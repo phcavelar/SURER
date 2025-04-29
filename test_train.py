@@ -8,7 +8,7 @@
     main function 'pt_pm_lr', 0.0002), ('pm_knns', 50), ('ft_lr', 2e-05
 '''
 import os
-import nni
+#import nni
 import time
 import warnings
 warnings.filterwarnings('ignore')
@@ -25,21 +25,23 @@ from copy import deepcopy
 from models.dfp_gnn import DFPGNN
 from utils.ops_pt import pretraining
 from utils.ops_ev import get_evaluation_results
+from utils.ops_io import load_data_graph
 from utils.load_data_clusterft import load_data_clusterft
 
 
-params = nni.get_next_parameter()
+#params = nni.get_next_parameter()
 
 params = {'pt_pm_lr': 0.0001, 'pm_knns': 25, 'seed': 17204, 'ft_lr': 1e-05, 'ft_sp_weight': 3, 'pt_pm_sp_weight': 0.01, 'ft_num_epochs': 350, 'pt_pm_num_epochs': 450, 'n_repeated': 10, 'ft_update_interval': 80, 'ft_cl_weight': 0.01, 'ft_pl_weight': 0.5}
 print('params',params)
 def del_files(path_file):
-    ls = os.listdir(path_file)
-    for i in ls:
-        f_path = os.path.join(path_file, i)
-        if os.path.isdir(f_path):
-            del_files(f_path)
-        else:
-            os.remove(f_path)
+    if os.path.exists(path_file) and os.path.isdir(path_file):
+        ls = os.listdir(path_file)
+        for i in ls:
+            f_path = os.path.join(path_file, i)
+            if os.path.isdir(f_path):
+                del_files(f_path)
+            else:
+                os.remove(f_path)
 
 
 if __name__ == '__main__':
@@ -150,7 +152,7 @@ if __name__ == '__main__':
             hidden, _, q, X_bar_list, A_bar_list = model(feature_list, adj_hat_list)
             ACC, NMI, Purity, ARI, P, R, F1 = get_evaluation_results(labels.numpy(), y_pred)
             print('Iter {}'.format(epoch), ':Acc {:.4f}'.format(ACC), ', f1 {:.4f}'.format(F1))
-            nni.report_intermediate_result(0)
+            #print(0) #nni.report_intermediate_result(0)
 
             if ACC > best_val_acc:
                 best_val_acc = ACC
@@ -187,11 +189,11 @@ if __name__ == '__main__':
         return q.data.cpu().numpy().argmax(1), weights, best_val_acc
 
 
-  #  del_files("./data/adj_matrix/")
+    del_files("./data/adj_matrix/")
     del_files("./data/ec_feature/")
     del_files("./data/graph_new_weight/")
     del_files("./data/pt_weight/")
-
+    load_data_graph(direction_path=args.direction, dataset_name=args.dataset_name, load_saved=False, k_nearest_neighobrs=args.pm_knns,)
 
     all_ACC = []
     all_NMI = []
@@ -211,6 +213,7 @@ if __name__ == '__main__':
        # args.pt_pm_num_epochs = 500
         if i > 0:
             pre_train = True
+            
         adj_list_new = pretraining(pre_train, args)
 
         labels, feature_list, adj_wave_list, adj_hat_list, norm_list, weight_tensor_list = load_data_clusterft(adj_list_new,
@@ -269,7 +272,7 @@ if __name__ == '__main__':
         ft_cost_time = time.time() - ft_begin_time
         ACC, NMI, Purity, ARI, P, R, F1 = get_evaluation_results(labels.numpy(), predicted)
         print('ACC, NMI, Purity, ARI, P, R, F1',ACC, NMI, Purity, ARI, P, R, F1)
-        # nni.report_final_result(ACC)
+        #print(ACC) # nni.report_final_result(ACC)
 
         # pred_save_path = './data/pred/' + args.dataset_name + '.mat'
         # sio.savemat(pred_save_path, {'pred': predicted})
@@ -282,7 +285,7 @@ if __name__ == '__main__':
         all_R.append(R)
         all_F.append(F1)
         all_FT_TIME.append(ft_cost_time)
-    nni.report_final_result(ACC)
+    print(ACC) #nni.report_final_result(ACC)
     # append result to .txt file
     fp = open("results.txt", "a+", encoding="utf-8")
     # fp = open("results_" + args.dataset_name + ".txt", "a+", encoding="utf-8")
