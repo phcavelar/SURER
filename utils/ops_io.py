@@ -129,16 +129,16 @@ def construct_adjacency_matrix(features, k_nearest_neighobrs, prunning_one, prun
     start_time = time.time()
     nbrs = NearestNeighbors(n_neighbors=k_nearest_neighobrs + 1, algorithm='ball_tree').fit(features)
     adj_wave = nbrs.kneighbors_graph(features)  # <class 'scipy.sparse.csr.csr_matrix'>
-
+    adj_wave = adj_wave.A if hasattr(adj_wave,"A") else adj_wave.todense() 
     if prunning_one:
         # Pruning strategy 1
-        original_adj_wave = adj_wave.A
-        judges_matrix = original_adj_wave == original_adj_wave.T
+        original_adj_wave = adj_wave
+        judges_matrix = (original_adj_wave == original_adj_wave.T)
         np_adj_wave = original_adj_wave * judges_matrix
         adj_wave = sp.csc_matrix(np_adj_wave)
     else:
         # transform the matrix to be symmetric (Instead of Pruning strategy 1)
-        np_adj_wave = construct_symmetric_matrix(adj_wave.A)
+        np_adj_wave = construct_symmetric_matrix(adj_wave)
         adj_wave = sp.csc_matrix(np_adj_wave)
 
     # obtain the adjacency matrix without self-connection
@@ -148,7 +148,7 @@ def construct_adjacency_matrix(features, k_nearest_neighobrs, prunning_one, prun
 
     if prunning_two:
         # Pruning strategy 2
-        adj = adj.A
+        adj = adj.A if hasattr(adj,"A") else adj.todense()
         b = np.nonzero(adj)
         rows = b[0]
         cols = b[1]
