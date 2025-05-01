@@ -105,7 +105,7 @@ def load_single_view_data(feature, dataset_name, normalization, view_no, load_sa
     # features = construct_sparse_float_tensor(features)
 
     if sp.isspmatrix_csr(feature):
-        feature = feature.todense()
+        feature = feature.toarray()
     feature = torch.from_numpy(feature).float()
     adj_wave = construct_sparse_float_tensor(adj_wave)
     adj_hat = construct_sparse_float_tensor(adj_hat)
@@ -129,7 +129,7 @@ def construct_adjacency_matrix(features, k_nearest_neighobrs, prunning_one, prun
     start_time = time.time()
     nbrs = NearestNeighbors(n_neighbors=k_nearest_neighobrs + 1, algorithm='ball_tree').fit(features)
     adj_wave = nbrs.kneighbors_graph(features)  # <class 'scipy.sparse.csr.csr_matrix'>
-    adj_wave = adj_wave.A if hasattr(adj_wave,"A") else adj_wave.todense() 
+    adj_wave = adj_wave.A if hasattr(adj_wave,"A") else adj_wave.toarray() 
     if prunning_one:
         # Pruning strategy 1
         original_adj_wave = adj_wave
@@ -148,7 +148,7 @@ def construct_adjacency_matrix(features, k_nearest_neighobrs, prunning_one, prun
 
     if prunning_two:
         # Pruning strategy 2
-        adj = adj.A if hasattr(adj,"A") else adj.todense()
+        adj = adj.A if hasattr(adj,"A") else adj.toarray()
         b = np.nonzero(adj)
         rows = b[0]
         cols = b[1]
